@@ -3,6 +3,7 @@ from discord.ext import commands
 import random
 import asyncio
 import os
+import json
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -11,6 +12,20 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 lobby_title = "Partita Dadi"
 players = []
+
+FILE = "stats.json"
+
+# 🔹 Carica stats
+def load_stats():
+    if not os.path.exists(FILE):
+        return {}
+    with open(FILE, "r") as f:
+        return json.load(f)
+
+# 🔹 Salva stats
+def save_stats(data):
+    with open(FILE, "w") as f:
+        json.dump(data, f, indent=4)
 
 @bot.event
 async def on_ready():
@@ -25,12 +40,11 @@ async def lobby(ctx, *, titolo: str = "Partita Dadi"):
 
     await ctx.send(f"🎮 Lobby creata: **{lobby_title}**\nUsa `!giocatori nome1 nome2 nome3`")
 
-# 👥 INSERISCI GIOCATORI (SENZA VIRGOLE)
+# 👥 GIOCATORI SENZA VIRGOLE
 @bot.command()
 async def giocatori(ctx, *, lista: str):
     global players
 
-    # Divide per spazi
     players = lista.split()
 
     if len(players) == 0:
@@ -38,7 +52,7 @@ async def giocatori(ctx, *, lista: str):
         return
 
     await ctx.send(
-        f"👥 Giocatori registrati:\n" +
+        f"👥 Giocatori:\n" +
         "\n".join([f"• {p}" for p in players])
     )
 
@@ -47,7 +61,9 @@ async def giocatori(ctx, *, lista: str):
 
 # 🎲 GIOCO CON SPAREGGI
 async def play_game(ctx):
-    global players
+    global players, lobby_title
+
+    stats = load_stats()
 
     round_num = 1
     current_players = players.copy()
@@ -59,23 +75,36 @@ async def play_game(ctx):
         await ctx.send(f"🔁 **Round {round_num}**")
 
         for p in current_players:
-            dado1 = random.randint(1, 6)
-            dado2 = random.randint(1, 6)
-            totale = dado1 + dado2
+            d1 = random.randint(1, 6)
+            d2 = random.randint(1, 6)
+            total = d1 + d2
 
-            scores[p] = totale
+            scores[p] = total
 
-            await ctx.send(f"🎲 {p}: {dado1} + {dado2} = **{totale}**")
+            await ctx.send(f"🎲 {p}: {d1} + {d2} = **{total}**")
             await asyncio.sleep(0.3)
 
         max_score = max(scores.values())
-
         winners = [p for p, s in scores.items() if s == max_score]
 
         if len(winners) == 1:
+            winner = winners[0]
+
             await ctx.send(
-                f"\n🏆 **VINCITORE: {winners[0]} con {max_score}!**"
+                f"\n🏆 **VINCITORE: {winner} con {max_score}!**"
             )
+
+            # 💾 SALVATAGGIO
+            if lobby_title not in stats:
+                stats[lobby_title] = {}
+
+            if winner not in stats[lobby_title]:
+                stats[lobby_title][winner] = 0
+
+            stats[lobby_title][winner] += 1
+
+            save_stats(stats)
+
             break
         else:
             await ctx.send(
@@ -87,5 +116,26 @@ async def play_game(ctx):
             round_num += 1
             await asyncio.sleep(1)
 
-# 🔒 AVVIO BOT (Railway / locale)
+# 📊 STORICO
+@bot.command()
+async def storico(ctx):
+    stats = load_stats()
+
+    if not stats:
+        await ctx.send("❌ Nessuna statistica disponibile!")
+        return
+
+    msg = "📊 **Storico Vittorie**\n\n"
+
+    for lobby, data in stats.items():
+        msg += f"🎮 {lobby}\n"
+
+        for name, wins in data.items():
+            msg += f"• {name}: {wins}\n"
+
+        msg += "\n"
+
+    await ctx.send(msg)
+
+# 🔒 AVVIO BOT
 bot.run(os.getenv("DISCORD_TOKEN"))
