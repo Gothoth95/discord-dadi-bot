@@ -38,7 +38,7 @@ async def lobby(ctx, *, titolo: str = "Partita Dadi"):
     lobby_title = titolo
     players = []
 
-    await ctx.send(f"Lobby creata: {lobby_title}\nUsa !giocatori nome1 nome2 nome3")
+    await ctx.send(f"🎮 Lobby creata: **{lobby_title}**\nUsa `!giocatori nome1 nome2 nome3`")
 
 # 👥 GIOCATORI
 @bot.command()
@@ -48,10 +48,10 @@ async def giocatori(ctx, *, lista: str):
     players = lista.split()
 
     if len(players) == 0:
-        await ctx.send("Nessun giocatore valido.")
+        await ctx.send("❌ Nessun giocatore valido.")
         return
 
-    await ctx.send("Giocatori:\n" + "\n".join(players))
+    await ctx.send("👥 Giocatori:\n" + "\n".join([f"• {p}" for p in players]))
 
     await asyncio.sleep(1)
     await play_game(ctx)
@@ -66,11 +66,14 @@ async def play_game(ctx):
     round_num = 1
     current_players = players.copy()
 
-    await ctx.send(f"\n{lobby_title}\n")
+    await ctx.send(f"\n🎲 **{lobby_title}** 🎲\n")
 
     while True:
         scores = {}
-        round_msg = f"Round {round_num}\n\n"
+
+        # ✨ Messaggio migliorato
+        round_msg = f"🎲 **{lobby_title}** 🎲\n\n"
+        round_msg += f"🔁 **Round {round_num}**\n\n"
 
         for p in current_players:
             d1 = random.randint(1, 6)
@@ -79,7 +82,7 @@ async def play_game(ctx):
 
             scores[p] = total
 
-            round_msg += f"{p}: {d1} + {d2} = {total}\n"
+            round_msg += f"👤 **{p}** → 🎲 {d1} + {d2} = **{total}**\n"
 
         await ctx.send(round_msg)
 
@@ -89,7 +92,7 @@ async def play_game(ctx):
         if len(winners) == 1:
             winner = winners[0]
 
-            await ctx.send(f"Vincitore: {winner} con {max_score}")
+            await ctx.send(f"🏆 **VINCITORE: {winner} con {max_score}!**")
 
             # 💾 SALVATAGGIO
             if guild_id not in stats:
@@ -107,8 +110,8 @@ async def play_game(ctx):
             break
 
         else:
-            await ctx.send("Pareggio tra: " + " ".join(winners))
-            await ctx.send("Spareggio...\n")
+            await ctx.send(f"⚔️ Pareggio tra: **{' '.join(winners)}**")
+            await ctx.send("🎲 Spareggio in corso...\n")
 
             current_players = winners
             round_num += 1
@@ -121,20 +124,20 @@ async def storico(ctx):
     guild_id = str(ctx.guild.id)
 
     if guild_id not in stats:
-        await ctx.send("Nessuna statistica.")
+        await ctx.send("❌ Nessuna statistica.")
         return
 
-    msg = "Storico:\n\n"
+    msg = "📊 **Storico Vittorie**\n\n"
 
     for lobby, data in stats[guild_id].items():
-        msg += f"{lobby}\n"
+        msg += f"🎮 **{lobby}**\n"
         for name, wins in data.items():
-            msg += f"- {name}: {wins}\n"
+            msg += f"• {name}: {wins}\n"
         msg += "\n"
 
     await ctx.send(msg)
 
-# ❌ RESET
+# ❌ RESET LOBBY
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def reset(ctx, *, nome: str):
@@ -142,11 +145,11 @@ async def reset(ctx, *, nome: str):
     guild_id = str(ctx.guild.id)
 
     if guild_id not in stats or not stats[guild_id]:
-        await ctx.send("Nessuno storico presente.")
+        await ctx.send("❌ Nessuno storico presente.")
         return
 
     if nome not in stats[guild_id]:
-        await ctx.send(f"Nessuna lobby '{nome}'.")
+        await ctx.send(f"❌ Nessuna lobby '{nome}'.")
         return
 
     del stats[guild_id][nome]
@@ -156,7 +159,7 @@ async def reset(ctx, *, nome: str):
 
     save_stats(stats)
 
-    await ctx.send(f"Storico '{nome}' eliminato.")
+    await ctx.send(f"✅ Storico '{nome}' eliminato.")
 
 # 🔒 AVVIO
 bot.run(os.getenv("DISCORD_TOKEN"))
