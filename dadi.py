@@ -130,17 +130,41 @@ async def storico(ctx):
         await ctx.send("❌ Nessuna statistica per questo server!")
         return
 
-    msg = "📊 **Storico Vittorie**\n\n"
+    msg = "📊 Storico Vittorie\n\n"
 
     for lobby, data in stats[guild_id].items():
-        msg += f"🎮 {lobby}\n"
+        msg += f"{lobby}\n"
 
         for name, wins in data.items():
-            msg += f"• {name}: {wins}\n"
+            msg += f"- {name}: {wins}\n"
 
         msg += "\n"
 
     await ctx.send(msg)
+
+# ❌ RESET SINGOLA LOBBY
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def reset(ctx, *, nome: str):
+    stats = load_stats()
+    guild_id = str(ctx.guild.id)
+
+    if guild_id not in stats or not stats[guild_id]:
+        await ctx.send("❌ Nessuno storico presente.")
+        return
+
+    if nome not in stats[guild_id]:
+        await ctx.send(f"❌ Nessuna lobby chiamata '{nome}' trovata.")
+        return
+
+    del stats[guild_id][nome]
+
+    if not stats[guild_id]:
+        del stats[guild_id]
+
+    save_stats(stats)
+
+    await ctx.send(f"✅ Storico '{nome}' eliminato.")
 
 # 🔒 AVVIO BOT
 bot.run(os.getenv("DISCORD_TOKEN"))
