@@ -23,14 +23,15 @@ async def lobby(ctx, *, titolo: str = "Partita Dadi"):
     lobby_title = titolo
     players = []
 
-    await ctx.send(f"🎮 Lobby creata: **{lobby_title}**\nUsa `!giocatori A, B, C`")
+    await ctx.send(f"🎮 Lobby creata: **{lobby_title}**\nUsa `!giocatori nome1 nome2 nome3`")
 
-# 👥 INSERISCI GIOCATORI
+# 👥 INSERISCI GIOCATORI (SENZA VIRGOLE)
 @bot.command()
 async def giocatori(ctx, *, lista: str):
     global players
 
-    players = [p.strip() for p in lista.split(",") if p.strip()]
+    # Divide per spazi
+    players = lista.split()
 
     if len(players) == 0:
         await ctx.send("❌ Nessun giocatore valido!")
@@ -78,7 +79,7 @@ async def play_game(ctx):
             break
         else:
             await ctx.send(
-                f"\n⚔️ Pareggio tra: {', '.join(winners)} con {max_score}!"
+                f"\n⚔️ Pareggio tra: {' '.join(winners)} con {max_score}!"
             )
             await ctx.send("🔁 Spareggio in corso...\n")
 
@@ -86,5 +87,5 @@ async def play_game(ctx):
             round_num += 1
             await asyncio.sleep(1)
 
-# 🔒 AVVIO SICURO (PER RAILWAY / LOCALE)
+# 🔒 AVVIO BOT (Railway / locale)
 bot.run(os.getenv("DISCORD_TOKEN"))
