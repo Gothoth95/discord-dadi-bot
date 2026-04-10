@@ -38,9 +38,9 @@ async def lobby(ctx, *, titolo: str = "Partita Dadi"):
     lobby_title = titolo
     players = []
 
-    await ctx.send(f"🎮 Lobby creata: **{lobby_title}**\nUsa `!giocatori nome1 nome2 nome3`")
+    await ctx.send(f"Lobby creata: {lobby_title}\nUsa !giocatori nome1 nome2 nome3")
 
-# 👥 GIOCATORI SENZA VIRGOLE
+# 👥 GIOCATORI
 @bot.command()
 async def giocatori(ctx, *, lista: str):
     global players
@@ -48,18 +48,15 @@ async def giocatori(ctx, *, lista: str):
     players = lista.split()
 
     if len(players) == 0:
-        await ctx.send("❌ Nessun giocatore valido!")
+        await ctx.send("Nessun giocatore valido.")
         return
 
-    await ctx.send(
-        f"👥 Giocatori:\n" +
-        "\n".join([f"• {p}" for p in players])
-    )
+    await ctx.send("Giocatori:\n" + "\n".join(players))
 
     await asyncio.sleep(1)
     await play_game(ctx)
 
-# 🎲 GIOCO CON SPAREGGI
+# 🎲 GIOCO
 async def play_game(ctx):
     global players, lobby_title
 
@@ -69,11 +66,11 @@ async def play_game(ctx):
     round_num = 1
     current_players = players.copy()
 
-    await ctx.send(f"\n🎲 **{lobby_title}** 🎲\n")
+    await ctx.send(f"\n{lobby_title}\n")
 
     while True:
         scores = {}
-        await ctx.send(f"🔁 **Round {round_num}**")
+        round_msg = f"Round {round_num}\n\n"
 
         for p in current_players:
             d1 = random.randint(1, 6)
@@ -82,8 +79,9 @@ async def play_game(ctx):
 
             scores[p] = total
 
-            await ctx.send(f"🎲 {p}: {d1} + {d2} = **{total}**")
-            await asyncio.sleep(0.3)
+            round_msg += f"{p}: {d1} + {d2} = {total}\n"
+
+        await ctx.send(round_msg)
 
         max_score = max(scores.values())
         winners = [p for p, s in scores.items() if s == max_score]
@@ -91,11 +89,9 @@ async def play_game(ctx):
         if len(winners) == 1:
             winner = winners[0]
 
-            await ctx.send(
-                f"\n🏆 **VINCITORE: {winner} con {max_score}!**"
-            )
+            await ctx.send(f"Vincitore: {winner} con {max_score}")
 
-            # 💾 SALVATAGGIO PER SERVER
+            # 💾 SALVATAGGIO
             if guild_id not in stats:
                 stats[guild_id] = {}
 
@@ -108,41 +104,37 @@ async def play_game(ctx):
             stats[guild_id][lobby_title][winner] += 1
 
             save_stats(stats)
-
             break
+
         else:
-            await ctx.send(
-                f"\n⚔️ Pareggio tra: {' '.join(winners)} con {max_score}!"
-            )
-            await ctx.send("🔁 Spareggio in corso...\n")
+            await ctx.send("Pareggio tra: " + " ".join(winners))
+            await ctx.send("Spareggio...\n")
 
             current_players = winners
             round_num += 1
             await asyncio.sleep(1)
 
-# 📊 STORICO PER SERVER
+# 📊 STORICO
 @bot.command()
 async def storico(ctx):
     stats = load_stats()
     guild_id = str(ctx.guild.id)
 
     if guild_id not in stats:
-        await ctx.send("❌ Nessuna statistica per questo server!")
+        await ctx.send("Nessuna statistica.")
         return
 
-    msg = "📊 Storico Vittorie\n\n"
+    msg = "Storico:\n\n"
 
     for lobby, data in stats[guild_id].items():
         msg += f"{lobby}\n"
-
         for name, wins in data.items():
             msg += f"- {name}: {wins}\n"
-
         msg += "\n"
 
     await ctx.send(msg)
 
-# ❌ RESET SINGOLA LOBBY
+# ❌ RESET
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def reset(ctx, *, nome: str):
@@ -150,11 +142,11 @@ async def reset(ctx, *, nome: str):
     guild_id = str(ctx.guild.id)
 
     if guild_id not in stats or not stats[guild_id]:
-        await ctx.send("❌ Nessuno storico presente.")
+        await ctx.send("Nessuno storico presente.")
         return
 
     if nome not in stats[guild_id]:
-        await ctx.send(f"❌ Nessuna lobby chiamata '{nome}' trovata.")
+        await ctx.send(f"Nessuna lobby '{nome}'.")
         return
 
     del stats[guild_id][nome]
@@ -164,7 +156,7 @@ async def reset(ctx, *, nome: str):
 
     save_stats(stats)
 
-    await ctx.send(f"✅ Storico '{nome}' eliminato.")
+    await ctx.send(f"Storico '{nome}' eliminato.")
 
-# 🔒 AVVIO BOT
+# 🔒 AVVIO
 bot.run(os.getenv("DISCORD_TOKEN"))
