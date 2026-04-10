@@ -64,6 +64,7 @@ async def play_game(ctx):
     global players, lobby_title
 
     stats = load_stats()
+    guild_id = str(ctx.guild.id)
 
     round_num = 1
     current_players = players.copy()
@@ -94,14 +95,17 @@ async def play_game(ctx):
                 f"\n🏆 **VINCITORE: {winner} con {max_score}!**"
             )
 
-            # 💾 SALVATAGGIO
-            if lobby_title not in stats:
-                stats[lobby_title] = {}
+            # 💾 SALVATAGGIO PER SERVER
+            if guild_id not in stats:
+                stats[guild_id] = {}
 
-            if winner not in stats[lobby_title]:
-                stats[lobby_title][winner] = 0
+            if lobby_title not in stats[guild_id]:
+                stats[guild_id][lobby_title] = {}
 
-            stats[lobby_title][winner] += 1
+            if winner not in stats[guild_id][lobby_title]:
+                stats[guild_id][lobby_title][winner] = 0
+
+            stats[guild_id][lobby_title][winner] += 1
 
             save_stats(stats)
 
@@ -116,18 +120,19 @@ async def play_game(ctx):
             round_num += 1
             await asyncio.sleep(1)
 
-# 📊 STORICO
+# 📊 STORICO PER SERVER
 @bot.command()
 async def storico(ctx):
     stats = load_stats()
+    guild_id = str(ctx.guild.id)
 
-    if not stats:
-        await ctx.send("❌ Nessuna statistica disponibile!")
+    if guild_id not in stats:
+        await ctx.send("❌ Nessuna statistica per questo server!")
         return
 
     msg = "📊 **Storico Vittorie**\n\n"
 
-    for lobby, data in stats.items():
+    for lobby, data in stats[guild_id].items():
         msg += f"🎮 {lobby}\n"
 
         for name, wins in data.items():
